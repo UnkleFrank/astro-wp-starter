@@ -1,0 +1,158 @@
+---
+// src/layouts/Layout.astro
+// Base layout — pulls site name/description from WordPress at build time.
+// Supports Yoast SEO metadata if installed on WP.
+
+import { getSiteInfo } from '../lib/wordpress';
+import type { WPYoast } from '../lib/types';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  yoast?: WPYoast;
+  image?: string;
+}
+
+const site = await getSiteInfo();
+
+const {
+  title,
+  description,
+  canonical,
+  yoast,
+  image,
+} = Astro.props;
+
+const pageTitle    = yoast?.title       ?? title       ?? site.name;
+const pageDesc     = yoast?.description ?? description ?? site.description;
+const pageImage    = yoast?.og_image?.[0]?.url ?? image;
+const pageCanonical = yoast?.canonical ?? canonical ?? Astro.url.href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    {pageDesc && <meta name="description" content={pageDesc} />}
+    <link rel="canonical" href={pageCanonical} />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={yoast?.og_title ?? pageTitle} />
+    {pageDesc && <meta property="og:description" content={yoast?.og_description ?? pageDesc} />}
+    {pageImage && <meta property="og:image" content={pageImage} />}
+    <meta property="og:url" content={pageCanonical} />
+    <meta property="og:type" content="website" />
+
+    <slot name="head" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a href="/" class="site-title">{site.name}</a>
+        {site.description && <p class="site-tagline">{site.description}</p>}
+        <nav class="site-nav">
+          <slot name="nav" />
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>&copy; {new Date().getFullYear()} {site.name}</p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --color-primary: #1a8286;
+    --color-dark:    #1a1a2e;
+    --color-gray:    #6b7280;
+    --color-border:  #e5e7eb;
+    --color-light:   #f9fafb;
+    --radius:        8px;
+    --shadow:        0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --container:     1100px;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    color: var(--color-dark);
+    background: white;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .site-header {
+    background: white;
+    border-bottom: 1px solid var(--color-border);
+    padding: 1rem 0;
+  }
+
+  .site-header .container {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .site-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-dark);
+    text-decoration: none;
+  }
+
+  .site-tagline {
+    font-size: .85rem;
+    color: var(--color-gray);
+    margin: 0;
+    flex: 1;
+  }
+
+  .site-nav {
+    display: flex;
+    gap: 1.25rem;
+  }
+
+  .site-nav a {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--color-dark);
+    text-decoration: none;
+  }
+
+  .site-nav a:hover { color: var(--color-primary); }
+
+  main { padding: 2.5rem 0; min-height: 60vh; }
+
+  .site-footer {
+    background: var(--color-light);
+    border-top: 1px solid var(--color-border);
+    padding: 1.5rem 0;
+    font-size: .875rem;
+    color: var(--color-gray);
+    text-align: center;
+  }
+
+  img { max-width: 100%; height: auto; }
+
+  a { color: var(--color-primary); }
+
+  h1, h2, h3, h4 { line-height: 1.25; }
+</style>

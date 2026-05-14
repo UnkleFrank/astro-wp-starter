@@ -1,0 +1,70 @@
+---
+// src/pages/category/[slug].astro
+// Category archive page.
+
+import Layout from '../../layouts/Layout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getAllCategories, getPostsByCategory } from '../../lib/wordpress';
+import type { WPCategory } from '../../lib/types';
+
+export async function getStaticPaths() {
+  const categories = await getAllCategories();
+  return categories.map(cat => ({
+    params: { slug: cat.slug },
+    props:  { category: cat },
+  }));
+}
+
+interface Props { category: WPCategory; }
+const { category } = Astro.props;
+
+const posts = await getPostsByCategory(category.id);
+---
+
+<Layout
+  title={`${category.name} — Blog`}
+  description={category.description || `Posts in the ${category.name} category`}
+>
+
+  <div class="container">
+    <header class="cat-header">
+      <p class="cat-label">Category</p>
+      <h1>{category.name}</h1>
+      {category.description && <p class="cat-desc">{category.description}</p>}
+      <p class="cat-count">{posts.length} {posts.length === 1 ? 'post' : 'posts'}</p>
+    </header>
+
+    {posts.length === 0 ? (
+      <p style="color:var(--color-gray);">No posts in this category yet.</p>
+    ) : (
+      <div class="posts-grid">
+        {posts.map(post => <PostCard post={post} />)}
+      </div>
+    )}
+
+    <div style="margin-top:1.5rem;">
+      <a href="/blog/" style="color:var(--color-primary);font-weight:700;">← All posts</a>
+    </div>
+  </div>
+
+</Layout>
+
+<style>
+  .cat-header { margin-bottom: 2rem; }
+  .cat-label {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--color-primary);
+    margin: 0 0 .35rem;
+  }
+  .cat-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 .5rem; }
+  .cat-desc { color: var(--color-gray); margin: 0 0 .5rem; }
+  .cat-count { font-size: .875rem; color: var(--color-gray); margin: 0; }
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+</style>

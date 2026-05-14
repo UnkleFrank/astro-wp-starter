@@ -1,0 +1,82 @@
+---
+// src/pages/blog/index.astro
+// Blog listing page — paginated.
+
+import Layout from '../../layouts/Layout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getAllPosts, getAllCategories } from '../../lib/wordpress';
+
+const [posts, categories] = await Promise.all([
+  getAllPosts(),
+  getAllCategories(),
+]);
+---
+
+<Layout title="Blog" description={`All posts — ${posts.length} articles`}>
+
+  <div class="container">
+
+    <header class="blog-header">
+      <h1>Blog</h1>
+      <p class="blog-count">{posts.length} posts</p>
+    </header>
+
+    {categories.length > 1 && (
+      <div class="cat-filter">
+        <span class="cat-label">Browse by category:</span>
+        <a href="/blog/" class="cat-chip active">All</a>
+        {categories.map(cat => (
+          <a href={`/category/${cat.slug}/`} class="cat-chip">{cat.name}</a>
+        ))}
+      </div>
+    )}
+
+    <div class="posts-grid">
+      {posts.map(post => <PostCard post={post} />)}
+    </div>
+
+  </div>
+
+</Layout>
+
+<style>
+  .blog-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .blog-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0; }
+  .blog-count { color: var(--color-gray); font-size: .9rem; margin: 0; }
+  .cat-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 1.5rem;
+  }
+  .cat-label { font-size: .85rem; font-weight: 600; color: var(--color-gray); }
+  .cat-chip {
+    font-size: .825rem;
+    padding: .3rem .75rem;
+    border-radius: 999px;
+    background: white;
+    border: 1px solid var(--color-border);
+    color: var(--color-dark);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all .15s;
+  }
+  .cat-chip:hover, .cat-chip.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+  }
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+</style>

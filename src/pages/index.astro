@@ -1,0 +1,84 @@
+---
+// src/pages/index.astro
+// Homepage — renders the WordPress "front page" if set, otherwise shows recent posts.
+
+import Layout from '../layouts/Layout.astro';
+import RichText from '../components/RichText.astro';
+import PostCard from '../components/PostCard.astro';
+import { getAllPages, getAllPosts, getSiteInfo, getFeaturedImageUrl } from '../lib/wordpress';
+
+const [site, pages, posts] = await Promise.all([
+  getSiteInfo(),
+  getAllPages(),
+  getAllPosts(),
+]);
+
+// Try to find a page set as front page (WordPress reading settings)
+// If no static front page, fall back to blog-style homepage
+const frontPage = pages.find(p => p.slug === 'home' || p.slug === 'homepage' || p.slug === 'front-page') ?? null;
+const recentPosts = posts.slice(0, 6);
+---
+
+<Layout title={site.name} description={site.description} yoast={frontPage?.yoast_head_json}>
+
+  {frontPage ? (
+    <!-- Static front page mode -->
+    <div class="container">
+      {(() => {
+        const image = getFeaturedImageUrl(frontPage, 'full');
+        return image && (
+          <div class="hero-image">
+            <img src={image} alt={frontPage.title.rendered} />
+          </div>
+        );
+      })()}
+      <h1 set:html={frontPage.title.rendered} />
+      <RichText content={frontPage.content.rendered} />
+    </div>
+  ) : (
+    <!-- Blog homepage mode -->
+    <div class="container">
+      <div class="home-header">
+        <h1>{site.name}</h1>
+        {site.description && <p class="home-tagline">{site.description}</p>}
+      </div>
+
+      {recentPosts.length > 0 && (
+        <section>
+          <h2>Latest Posts</h2>
+          <div class="posts-grid">
+            {recentPosts.map(post => <PostCard post={post} />)}
+          </div>
+          <div class="view-all">
+            <a href="/blog/">View all posts →</a>
+          </div>
+        </section>
+      )}
+    </div>
+  )}
+
+</Layout>
+
+<style>
+  .hero-image {
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .hero-image img {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+  }
+  .home-header { margin-bottom: 2.5rem; }
+  .home-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: .5rem; }
+  .home-tagline { font-size: 1.1rem; color: var(--color-gray); margin: 0; }
+  h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 1.25rem; }
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  .view-all { margin-top: 1.5rem; }
+  .view-all a { font-weight: 700; color: var(--color-primary); text-decoration: none; }
+</style>

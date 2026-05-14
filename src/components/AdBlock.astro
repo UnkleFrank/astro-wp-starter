@@ -1,0 +1,127 @@
+---
+// src/components/AdBlock.astro
+// Renders WooCommerce ad products.
+// By convention, "ads" are WC products in the "ads" category.
+// Each product = one ad slot: image, title, short description, link.
+
+import { getAdProducts } from '../lib/woocommerce';
+import type { WCProduct } from '../lib/types';
+
+interface Props {
+  heading?: string;
+  limit?: number;
+  products?: WCProduct[];  // pass pre-fetched products to avoid extra fetch
+}
+
+const { heading = 'Sponsored', limit = 3, products: propProducts } = Astro.props;
+
+// Use passed products or fetch from WC
+const allAds = propProducts ?? await getAdProducts();
+const ads    = allAds.slice(0, limit);
+
+// Each ad can have an ACF or meta field 'ad_url' for click-through link
+function getAdUrl(product: WCProduct): string {
+  const metaUrl = product.meta_data.find(m => m.key === 'ad_url')?.value;
+  if (metaUrl && typeof metaUrl === 'string') return metaUrl;
+  // fallback: ACF field
+  if (product.acf?.ad_url && typeof product.acf.ad_url === 'string') return product.acf.ad_url;
+  return product.permalink;
+}
+---
+
+{ads.length > 0 && (
+  <aside class="ad-block">
+    <div class="ad-block-label">{heading}</div>
+    <div class="ad-grid">
+      {ads.map(ad => {
+        const url   = getAdUrl(ad);
+        const image = ad.images[0];
+        return (
+          <a href={url} target="_blank" rel="noopener sponsored" class="ad-item">
+            {image && (
+              <img src={image.src} alt={image.alt || ad.name} class="ad-image" loading="lazy" />
+            )}
+            <div class="ad-body">
+              <strong class="ad-name">{ad.name}</strong>
+              {ad.short_description && (
+                <p class="ad-desc" set:html={ad.short_description} />
+              )}
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </aside>
+)}
+
+<style>
+  .ad-block {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    background: var(--color-light);
+    position: relative;
+  }
+
+  .ad-block-label {
+    position: absolute;
+    top: -10px;
+    left: 1rem;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: var(--color-gray);
+    color: white;
+    padding: .15rem .6rem;
+    border-radius: 999px;
+  }
+
+  .ad-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .ad-item {
+    display: flex;
+    gap: .85rem;
+    align-items: flex-start;
+    text-decoration: none;
+    color: inherit;
+    padding: .75rem;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: box-shadow .15s;
+  }
+
+  .ad-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+  .ad-image {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .ad-body { flex: 1; min-width: 0; }
+
+  .ad-name {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    display: block;
+    margin-bottom: .2rem;
+  }
+
+  .ad-desc {
+    font-size: .8rem;
+    color: var(--color-gray);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .ad-desc :global(p) { margin: 0; }
+</style>

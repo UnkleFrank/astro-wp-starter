@@ -1,0 +1,131 @@
+---
+// src/pages/blog/[slug].astro
+// Individual blog post page.
+
+import Layout from '../../layouts/Layout.astro';
+import RichText from '../../components/RichText.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getAllPosts, getFeaturedImageUrl, formatDate } from '../../lib/wordpress';
+import type { WPPost } from '../../lib/types';
+
+export async function getStaticPaths() {
+  const posts = await getAllPosts();
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props:  { post, allPosts: posts },
+  }));
+}
+
+interface Props { post: WPPost; allPosts: WPPost[]; }
+const { post, allPosts } = Astro.props;
+
+const image      = getFeaturedImageUrl(post, 'full');
+const date       = formatDate(post.date);
+const categories = post._embedded?.['wp:term']?.[0] ?? [];
+const author     = post._embedded?.author?.[0];
+
+// Related posts: same category, exclude current
+const catIds = post.categories;
+const related = allPosts
+  .filter(p => p.id !== post.id && p.categories.some(c => catIds.includes(c)))
+  .slice(0, 3);
+---
+
+<Layout
+  title={post.title.rendered}
+  yoast={post.yoast_head_json}
+  image={image ?? undefined}
+>
+
+  <div class="container">
+    <article class="post">
+
+      <header class="post-header">
+        {categories.length > 0 && (
+          <div class="post-cats">
+            {categories.map(cat => (
+              <a href={`/category/${cat.slug}/`} class="post-cat">{cat.name}</a>
+            ))}
+          </div>
+        )}
+        <h1 set:html={post.title.rendered} />
+        <div class="post-meta">
+          {author && <span>By {author.name}</span>}
+          <time datetime={post.date}>{date}</time>
+        </div>
+      </header>
+
+      {image && (
+        <div class="post-hero">
+          <img src={image} alt={post.title.rendered} />
+        </div>
+      )}
+
+      <RichText content={post.content.rendered} />
+
+    </article>
+
+    {related.length > 0 && (
+      <section class="related">
+        <h2>Related Posts</h2>
+        <div class="related-grid">
+          {related.map(p => <PostCard post={p} />)}
+        </div>
+      </section>
+    )}
+  </div>
+
+</Layout>
+
+<style>
+  .post { max-width: 800px; }
+
+  .post-header { margin-bottom: 1.75rem; }
+
+  .post-cats {
+    display: flex;
+    gap: .4rem;
+    margin-bottom: .75rem;
+  }
+  .post-cat {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .post-header h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 800;
+    margin: 0 0 .75rem;
+    line-height: 1.2;
+  }
+
+  .post-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: .875rem;
+    color: var(--color-gray);
+  }
+
+  .post-hero {
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .post-hero img {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+  }
+
+  .related { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--color-border); }
+  .related h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 1.25rem; }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+</style>

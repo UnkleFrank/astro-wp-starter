@@ -1,0 +1,86 @@
+---
+// src/pages/[...slug].astro
+// Handles ALL WordPress pages, including nested paths like /services/web-design/
+// Excludes the homepage slug (handled by index.astro).
+
+import Layout from '../layouts/Layout.astro';
+import RichText from '../components/RichText.astro';
+import { getAllPages, buildPagePaths, getFeaturedImageUrl } from '../lib/wordpress';
+import type { WPPage } from '../lib/types';
+
+export async function getStaticPaths() {
+  const pages    = await getAllPages();
+  const pathsMap = buildPagePaths(pages);
+
+  // Reserved slugs handled by other routes
+  const RESERVED = new Set(['blog', 'category']);
+
+  return pages
+    .filter(page => {
+      const path = pathsMap.get(page.id) ?? [];
+      // Skip homepage slug and reserved top-level slugs
+      if (path.length === 1 && (path[0] === 'home' || path[0] === 'homepage' || path[0] === 'front-page')) return false;
+      if (path.length >= 1 && RESERVED.has(path[0])) return false;
+      return true;
+    })
+    .map(page => ({
+      params: { slug: (pathsMap.get(page.id) ?? [page.slug]).join('/') },
+      props:  { page },
+    }));
+}
+
+interface Props { page: WPPage; }
+const { page } = Astro.props;
+
+const image = getFeaturedImageUrl(page, 'full');
+---
+
+<Layout
+  title={page.title.rendered}
+  yoast={page.yoast_head_json}
+>
+
+  <div class="container">
+    <article class="page-content">
+
+      {image && (
+        <div class="page-hero-image">
+          <img src={image} alt={page.title.rendered} />
+        </div>
+      )}
+
+      <header class="page-header">
+        <h1 set:html={page.title.rendered} />
+      </header>
+
+      <RichText content={page.content.rendered} />
+
+      {/* ACF fields — add your custom field rendering here */}
+      {page.acf && Object.keys(page.acf).length > 0 && (
+        <slot name="acf-fields" />
+      )}
+
+    </article>
+  </div>
+
+</Layout>
+
+<style>
+  .page-hero-image {
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .page-hero-image img {
+    width: 100%;
+    max-height: 440px;
+    object-fit: cover;
+  }
+  .page-header { margin-bottom: 1.75rem; }
+  .page-header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
+    font-weight: 800;
+    margin: 0;
+  }
+  .page-content { max-width: 860px; }
+</style>

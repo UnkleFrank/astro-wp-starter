@@ -1,0 +1,16 @@
+{
+  "name": "astro-wp-starter",
+  "version": "1.0.0",
+  "description": "Headless WordPress + Astro static site starter",
+  "type": "module",
+  "scripts": {
+    "dev":     "astro dev",
+    "build":   "astro build",
+    "preview": "astro preview",
+    "check":   "astro check"
+  },
+  "dependencies": {
+    "astro":            "^4.16.0",
+    "@astrojs/netlify": "^5.5.0"
+  }
+}
