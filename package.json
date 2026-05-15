@@ -10,7 +10,6 @@
     "check":   "astro check"
   },
   "dependencies": {
-    "astro":            "^4.16.0",
-    "@astrojs/netlify": "^5.5.0"
+    "astro": "^4.16.0"
   }
 }

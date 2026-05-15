@@ -30,7 +30,7 @@ function astro_rebuild_settings_init() {
 
     add_settings_section(
         'astro_rebuild_section',
-        'Netlify Build Hook',
+        'Deploy Hook',
         '__return_false',
         'astro-rebuild'
     );
@@ -54,8 +54,10 @@ function astro_rebuild_settings_init() {
 
 function astro_rebuild_hook_url_field() {
     $val = esc_attr( get_option( 'astro_rebuild_hook_url', '' ) );
-    echo '<input type="url" name="astro_rebuild_hook_url" value="' . $val . '" class="regular-text" placeholder="https://api.netlify.com/build_hooks/xxxxxxxxx" />';
-    echo '<p class="description">Paste your Netlify build hook URL. Found in Site Settings → Build & deploy → Build hooks.</p>';
+    echo '<input type="url" name="astro_rebuild_hook_url" value="' . $val . '" class="regular-text" placeholder="https://api.netlify.com/build_hooks/xxx  or  https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/xxx" />';
+    echo '<p class="description">Paste your deploy hook URL.<br>';
+    echo '<strong>Netlify:</strong> Site Settings → Build &amp; deploy → Build hooks → Add build hook<br>';
+    echo '<strong>Cloudflare Pages:</strong> Pages project → Settings → Builds &amp; deployments → Add deploy hook</p>';
 }
 
 function astro_rebuild_enabled_field() {
@@ -68,7 +70,7 @@ function astro_rebuild_settings_page() {
     ?>
     <div class="wrap">
         <h1>Astro Rebuild Trigger</h1>
-        <p>This plugin fires your Netlify build hook whenever a page, post, or product is published or updated — keeping your Astro static front-end in sync with WordPress.</p>
+        <p>This plugin fires your deploy hook (Netlify or Cloudflare Pages) whenever a page, post, or product is published or updated — keeping your Astro static front-end in sync with WordPress.</p>
         <form method="post" action="options.php">
             <?php
             settings_fields( 'astro_rebuild' );

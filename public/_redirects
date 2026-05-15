@@ -1,0 +1,5 @@
+# Cloudflare Pages redirects
+# Add custom redirects here — format: /old-path /new-path 301
+#
+# Example:
+# /old-page /new-page 301
