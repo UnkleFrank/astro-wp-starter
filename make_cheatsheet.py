@@ -14,8 +14,8 @@ LIGHT_BG  = colors.HexColor("#f0f9f9")
 GRAY      = colors.HexColor("#6b7280")
 BORDER    = colors.HexColor("#e5e7eb")
 WHITE     = colors.white
-CODE_BG   = colors.HexColor("#1e2030")
-CODE_FG   = colors.HexColor("#a6e3a1")
+CODE_BG   = colors.HexColor("#f1f5f9")
+CODE_FG   = colors.HexColor("#0f4c52")
 
 # ── Doc ───────────────────────────────────────────────────────────────────────
 doc = SimpleDocTemplate(
@@ -40,10 +40,10 @@ STEP_TITLE = ParagraphStyle("STEP_TITLE", fontName="Helvetica-Bold", fontSize=12
                              textColor=DARK, leading=16, spaceAfter=3)
 BODY = ParagraphStyle("BODY", fontName="Helvetica", fontSize=9,
                       textColor=colors.HexColor("#374151"), leading=14, spaceAfter=2)
-CODE = ParagraphStyle("CODE", fontName="Courier", fontSize=8,
-                      textColor=CODE_FG, leading=13, spaceAfter=0,
+CODE = ParagraphStyle("CODE", fontName="Courier-Bold", fontSize=8.5,
+                      textColor=CODE_FG, leading=14, spaceAfter=0,
                       backColor=CODE_BG, leftIndent=8, rightIndent=8,
-                      borderPadding=(4, 6, 4, 6))
+                      borderPadding=(5, 8, 5, 8))
 NOTE = ParagraphStyle("NOTE", fontName="Helvetica-Oblique", fontSize=8,
                       textColor=GRAY, leading=12)
 FOOTER = ParagraphStyle("FOOTER", fontName="Helvetica", fontSize=8,
