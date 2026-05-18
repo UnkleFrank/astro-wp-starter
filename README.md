@@ -1,6 +1,8 @@
 # Astro + WordPress Starter
 
-A reusable starter kit for building fast static sites with **Astro** on the front end and **WordPress** as the content management system. WordPress handles all content editing; Astro pulls from the WP REST API at build time and deploys a static site to Netlify.
+A reusable starter kit for building fast static sites with **Astro** on the front end and **WordPress** as the content management system. WordPress handles all content editing; Astro pulls from the WP REST API at build time and deploys a static site to Cloudflare Pages or Netlify.
+
+> **Using Divi, Elementor, or another page builder?** Skip to the [Page Builder Sites](#page-builder-sites-divi-elementor-wpbakery) section — a different, simpler workflow applies.
 
 ## What's Included
 
@@ -205,8 +207,10 @@ astro-wp-starter/
 │   ├── _headers          ← Cloudflare Pages security headers
 │   └── _redirects        ← Cloudflare Pages redirects
 ├── wp-plugin/
-│   └── astro-rebuild/
-│       └── astro-rebuild.php      ← Auto-rebuild WP plugin
+│   ├── astro-rebuild/
+│   │   └── astro-rebuild.php      ← Auto-rebuild WP plugin
+│   └── divi-rest-renderer/
+│       └── divi-rest-renderer.php ← Divi REST renderer (experimental)
 ├── .env.example
 ├── astro.config.mjs
 ├── netlify.toml          ← Netlify build config & headers
@@ -282,6 +286,85 @@ Then create `src/pages/projects/[slug].astro` following the same pattern as `blo
 | `WC_SECRET` | No | WooCommerce Consumer Secret (read-only) |
 
 Set these in `.env` for local development and in **Netlify → Environment variables** for production.
+
+---
+
+## Page Builder Sites (Divi, Elementor, WPBakery)
+
+Page builders store content as shortcodes that require PHP to render. The Astro/REST API approach cannot process them — use **Simply Static** instead.
+
+### How it works
+
+Simply Static crawls your WordPress site exactly like a browser, captures the fully rendered HTML (Divi, Elementor, everything), and pushes it to GitHub. Cloudflare Pages deploys automatically.
+
+```
+Tom edits in WordPress → Simply Static exports static HTML
+→ pushes to GitHub → Cloudflare Pages deploys automatically
+```
+
+No Astro, no Node.js, no build command — just static HTML served at the edge.
+
+### Setup
+
+#### 1. Install Simply Static Pro
+
+Simply Static Pro is required for the GitHub push feature (~$99/yr).
+Download from [simplystatic.co](https://simplystatic.co) and install via **WP Admin → Plugins → Add New → Upload Plugin**.
+
+#### 2. Create a GitHub repository
+
+Create a **new empty public repository** on GitHub — this stores the exported static files, not source code. Name it something like `mysite-static`.
+
+#### 3. Generate a GitHub Personal Access Token
+
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens) → **Generate new token (classic)**
+2. Give it a name (e.g. "Simply Static – mysite")
+3. Check the **repo** scope
+4. Generate and copy the token
+
+#### 4. Configure Simply Static
+
+In **WP Admin → Simply Static → Settings → Deployment**:
+
+1. Select **GitHub** as the deployment method
+2. Enter your repository details:
+   - Repository: `your-username/mysite-static`
+   - Branch: `main`
+3. Paste your Personal Access Token
+4. Save settings
+
+#### 5. Connect Cloudflare Pages
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com) → **Pages → Create a project → Connect to Git**
+2. Select your `mysite-static` repository
+3. Build settings:
+   - Build command: *(leave blank)*
+   - Build output directory: `/`
+4. Deploy
+
+#### 6. Set up auto-export on save
+
+In **WP Admin → Simply Static → Settings → Misc**, enable **Regenerate on post save**. Every time Tom publishes a change, Simply Static automatically exports and pushes to GitHub — Cloudflare deploys within ~30 seconds.
+
+### Limitations
+
+Static exports have no PHP backend, so these require workarounds:
+
+| Feature | Workaround |
+|---------|-----------|
+| Contact forms | [Formspree](https://formspree.io) or [Web3Forms](https://web3forms.com) |
+| Site search | [Pagefind](https://pagefind.app) (static search) |
+| WooCommerce checkout | Cannot be made fully static — keep WC on WP |
+| Comments | [Disqus](https://disqus.com) or disable |
+
+### Which approach to use
+
+| WordPress setup | Use |
+|-----------------|-----|
+| Gutenberg / Classic Editor | This starter kit (Astro) |
+| ACF-heavy custom builds | This starter kit (Astro) |
+| Divi / Elementor / WPBakery | Simply Static → Cloudflare Pages |
+| Mixed (some Divi, some Gutenberg) | Simply Static for existing, Astro for new builds |
 
 ---
 
