@@ -206,9 +206,11 @@ astro-wp-starter/
 ├── public/
 │   ├── _headers          ← Cloudflare Pages security headers
 │   └── _redirects        ← Cloudflare Pages redirects
+├── github-workflow-templates/
+│   └── static-deploy.yml     ← GitHub Actions wget crawl workflow
 ├── wp-plugin/
 │   ├── astro-rebuild/
-│   │   └── astro-rebuild.php      ← Auto-rebuild WP plugin
+│   │   └── astro-rebuild.php      ← Auto-rebuild WP plugin (all 3 triggers)
 │   └── divi-rest-renderer/
 │       └── divi-rest-renderer.php ← Divi REST renderer (experimental)
 ├── .env.example
@@ -357,14 +359,31 @@ Static exports have no PHP backend, so these require workarounds:
 | WooCommerce checkout | Cannot be made fully static — keep WC on WP |
 | Comments | [Disqus](https://disqus.com) or disable |
 
+### Free alternative: GitHub Actions + wget
+
+Don't want to pay for Simply Static Pro? The **Astro Rebuild plugin** (included in this kit) has a built-in GitHub Actions trigger. It dispatches a workflow that crawls your WordPress site with `wget` and commits the static HTML to a GitHub repo — Cloudflare Pages deploys from there automatically. **Completely free.**
+
+Setup:
+1. Create an empty GitHub repo for your static output (e.g. `your-username/mysite-static`)
+2. Copy `github-workflow-templates/static-deploy.yml` into that repo at `.github/workflows/static-deploy.yml`
+3. Connect that repo to Cloudflare Pages (no build command, output directory: `/`)
+4. In **WP Admin → Settings → Astro Rebuild**, fill in the GitHub section:
+   - Repo: `your-username/mysite-static`
+   - Token: Personal Access Token (repo + actions scope)
+   - Workflow: `static-deploy.yml`
+   - URL to Crawl: your WordPress site URL
+
+Every content save triggers the workflow automatically.
+
 ### Which approach to use
 
 | WordPress setup | Use |
 |-----------------|-----|
 | Gutenberg / Classic Editor | This starter kit (Astro) |
 | ACF-heavy custom builds | This starter kit (Astro) |
-| Divi / Elementor / WPBakery | Simply Static → Cloudflare Pages |
-| Mixed (some Divi, some Gutenberg) | Simply Static for existing, Astro for new builds |
+| Divi / Elementor / WPBakery (free) | GitHub Actions + wget (built into rebuild plugin) |
+| Divi / Elementor / WPBakery (paid) | Simply Static Pro → GitHub → Cloudflare Pages |
+| Mixed (some Divi, some Gutenberg) | Both — rebuild plugin fires all configured triggers |
 
 ---
 

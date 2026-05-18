@@ -1,0 +1,91 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# static-deploy.yml
+#
+# SETUP INSTRUCTIONS:
+# 1. Copy this file to your STATIC OUTPUT repo at:
+#       .github/workflows/static-deploy.yml
+#    (This is NOT the Astro starter kit repo — it's the separate repo that
+#     stores the crawled HTML, e.g. "your-username/mysite-static")
+#
+# 2. In that repo's Settings → Secrets and variables → Actions, add:
+#       WP_URL  →  https://your-wordpress-site.com
+#    (Or let the WordPress plugin pass it dynamically via workflow_dispatch input)
+#
+# 3. Connect that repo to Cloudflare Pages:
+#    - Build command: (leave blank)
+#    - Build output directory: /
+#
+# 4. In WordPress: WP Admin → Settings → Astro Rebuild → fill in GitHub section
+#
+# The WordPress plugin triggers this workflow on every content save.
+# GitHub Actions crawls the live WP site, commits the HTML, CF Pages deploys.
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: Crawl & Deploy Static Site
+
+on:
+  workflow_dispatch:
+    inputs:
+      wp_url:
+        description: 'WordPress site URL to crawl'
+        required: false
+        type: string
+
+jobs:
+  crawl-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout static repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve crawl URL
+        id: url
+        run: |
+          # Use workflow input if provided, otherwise fall back to repo secret/var
+          URL="${{ github.event.inputs.wp_url }}"
+          if [ -z "$URL" ]; then
+            URL="${{ secrets.WP_URL }}"
+          fi
+          echo "crawl_url=$URL" >> $GITHUB_OUTPUT
+          # Extract domain for directory cleanup
+          DOMAIN=$(echo "$URL" | sed 's|https\?://||' | sed 's|/.*||')
+          echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
+
+      - name: Crawl WordPress site with wget
+        run: |
+          echo "Crawling: ${{ steps.url.outputs.crawl_url }}"
+          wget \
+            --mirror \
+            --convert-links \
+            --adjust-extension \
+            --page-requisites \
+            --no-parent \
+            --no-host-directories \
+            --quiet \
+            --show-progress \
+            "${{ steps.url.outputs.crawl_url }}"
+
+      - name: Clean up WordPress-only paths
+        run: |
+          # Remove WP admin and dynamic paths that shouldn't be served statically
+          rm -rf wp-admin wp-login.php wp-cron.php xmlrpc.php
+          # Remove query-string files wget sometimes creates
+          find . -name "*.html?*" -delete 2>/dev/null || true
+
+      - name: Commit and push static files
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          # Only commit if there are actual changes
+          if git diff --staged --quiet; then
+            echo "No changes detected — skipping commit."
+          else
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "Static deploy: $TIMESTAMP"
+            git push
+            echo "Deployed successfully."
+          fi
